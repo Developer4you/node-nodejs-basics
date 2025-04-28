@@ -4,8 +4,8 @@ import { pipeline } from 'stream/promises';
 import { join } from 'path';
 
 const compress = async () => {
-    const inputPath = join('src/zip/files', 'fileToCompress.txt');
-    const outputPath = join('src/zip/files', 'archive.gz');
+    const inputPath = join('src', 'zip', 'files', 'fileToCompress.txt');
+    const outputPath = join('src', 'zip', 'files', 'archive.gz');
 
     const gzip = createGzip();
     const readable = createReadStream(inputPath);

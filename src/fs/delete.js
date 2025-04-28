@@ -4,7 +4,7 @@ import { join } from 'path';
 
 const remove = async () => {
 
-    const path = join('src/fs/files', 'fileToRemove.txt');
+    const path = join('src', 'fs', 'files', 'fileToRemove.txt');
 
     try {
         await access(path, constants.F_OK);

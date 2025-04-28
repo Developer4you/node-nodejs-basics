@@ -4,7 +4,7 @@ import path from 'path';
 
 const calculateHash = async () => {
 
-    const filePath = path.join('src/hash/files', 'fileToCalculateHashFor.txt');
+    const filePath = path.join('src', 'hash', 'files', 'fileToCalculateHashFor.txt');
     const fileStream = createReadStream(filePath);
     const hash = createHash('sha256');
     fileStream.pipe(hash);

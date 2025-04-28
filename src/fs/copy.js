@@ -4,8 +4,8 @@ import { join } from 'path';
 
 const copy = async () => {
 
-    const path = join('src/fs/files');
-    const pathForCopy = join('src/fs/files_copy');
+    const path = join('src', 'fs', 'files');
+    const pathForCopy = join('src', 'fs', 'files_copy');
 
     try {
         await access(path, constants.F_OK);

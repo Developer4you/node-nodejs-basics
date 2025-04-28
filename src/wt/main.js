@@ -25,7 +25,8 @@ const performCalculations = async () => {
                 worker.postMessage(data);
 
                 worker.once('message', (message) => {
-                    resolveOnce({status: 'resolved', data: message});
+                    const status = (message === null) ? 'error' : 'resolved';
+                    resolveOnce({status, data: message});
                 });
 
                 worker.once('error', () => {

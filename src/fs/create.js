@@ -4,7 +4,7 @@ import { join } from 'path';
 
 const create = async () => {
 
-    const filePath = join('src/fs/files', 'fresh.txt');
+    const filePath = join('src', 'fs', 'files', 'fresh.txt');
 
     try {
         await access(filePath, constants.F_OK);

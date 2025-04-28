@@ -4,7 +4,7 @@ import { join } from 'path';
 
 const list = async () => {
 
-    const path = join('src/fs/files');
+    const path = join('src', 'fs', 'files');
 
     try {
         await access(path, constants.F_OK);

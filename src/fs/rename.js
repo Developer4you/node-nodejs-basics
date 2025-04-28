@@ -4,8 +4,8 @@ import { join } from 'path';
 
 const rename = async () => {
 
-    const path = join('src/fs/files', 'wrongFilename.txt');
-    const newPath = join('src/fs/files_copy', 'properFilename.md');
+    const path = join('src', 'fs', 'files', 'wrongFilename.txt');
+    const newPath = join('src', 'fs', 'files_copy', 'properFilename.md');
 
     try {
         await access(path, constants.F_OK);

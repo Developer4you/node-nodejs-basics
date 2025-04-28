@@ -2,7 +2,7 @@ import { createWriteStream } from 'fs';
 import { join } from 'path';
 
 const write = async () => {
-    const path = join('src/streams/files', 'fileToWrite.txt');
+    const path = join('src', 'streams', 'files', 'fileToWrite.txt');
     const writableStream = createWriteStream(path);
 
     writableStream.on('error', (err) => {
