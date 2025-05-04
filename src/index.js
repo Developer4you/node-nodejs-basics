@@ -86,3 +86,13 @@ function moveUp() {
         currentDir = parentDir;
     }
 }
+
+function printCurrentDirectory() {
+    console.log(`You are currently in ${currentDir}`);
+}
+
+function exitProgram() {
+    process.stdout.write(`Thank you for using File Manager, ${username}, goodbye!\n`);
+    rl.close();
+    process.nextTick(() => process.exit(0));
+}
