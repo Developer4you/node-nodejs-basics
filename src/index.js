@@ -1,6 +1,8 @@
 import os from 'os';
+import path from 'path';
 import readline from 'readline';
 import process from 'process';
+import fs from 'fs/promises';
 
 const args = process.argv.slice(2);
 const usernameArg = args.find(arg => arg.startsWith('--username='));
@@ -58,6 +60,11 @@ async function handleCommand(input) {
             await changeDirectory(args[0]);
             break;
 
+        case 'ls':
+            await listDirectoryContents();
+            break;
+
+
         default:
             console.log('Invalid input');
     }
@@ -95,4 +102,29 @@ function exitProgram() {
     process.stdout.write(`Thank you for using File Manager, ${username}, goodbye!\n`);
     rl.close();
     process.nextTick(() => process.exit(0));
+}
+
+async function listDirectoryContents() {
+    try {
+        const items = await fs.readdir(currentDir, { withFileTypes: true });
+
+        const folders = [];
+        const files = [];
+
+        for (const item of items) {
+            if (item.isDirectory()) {
+                folders.push({ Name: item.name, Type: 'directory' });
+            } else {
+                files.push({ Name: item.name, Type: 'file' });
+            }
+        }
+
+        folders.sort((a, b) => a.Name.localeCompare(b.Name));
+        files.sort((a, b) => a.Name.localeCompare(b.Name));
+
+        const result = [...folders, ...files];
+        console.table(result);
+    } catch {
+        throw new Error('Operation failed');
+    }
 }
