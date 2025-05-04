@@ -1,8 +1,10 @@
 import os from 'os';
 import path from 'path';
 import readline from 'readline';
-import process from 'process';
+import process from 'node:process';
 import fs from 'fs/promises';
+import { pipeline } from 'stream/promises';
+import { createReadStream, createWriteStream } from 'fs';
 
 const args = process.argv.slice(2);
 const usernameArg = args.find(arg => arg.startsWith('--username='));
@@ -53,10 +55,7 @@ async function handleCommand(input) {
             break;
 
         case 'cd':
-            if (!args[0]) {
-                console.log('Invalid input');
-                return;
-            }
+            if (!args[0]) return console.log('Invalid input');
             await changeDirectory(args[0]);
             break;
 
@@ -64,6 +63,59 @@ async function handleCommand(input) {
             await listDirectoryContents();
             break;
 
+        case 'cat':
+            if (!args[0]) return console.log('Invalid input');
+            await readFile(args[0]);
+            break;
+
+        case 'add':
+            if (!args[0]) return console.log('Invalid input');
+            await addFile(args[0]);
+            break;
+
+        case 'mkdir':
+            if (!args[0]) return console.log('Invalid input');
+            await makeDirectory(args[0]);
+            break;
+
+        case 'rn':
+            if (args.length < 2) return console.log('Invalid input');
+            await renameFile(args[0], args[1]);
+            break;
+
+        case 'cp':
+            if (args.length < 2) return console.log('Invalid input');
+            await copyFile(args[0], args[1]);
+            break;
+
+        case 'mv':
+            if (args.length < 2) return console.log('Invalid input');
+            await moveFile(args[0], args[1]);
+            break;
+
+        case 'rm':
+            if (!args[0]) return console.log('Invalid input');
+            await removeFile(args[0]);
+            break;
+
+        case 'os':
+            await handleOSCommand(args[0]);
+            break;
+
+        case 'hash':
+            if (!args[0]) return console.log('Invalid input');
+            await hashFile(args[0]);
+            break;
+
+        case 'compress':
+            if (args.length < 2) return console.log('Invalid input');
+            await compressFile(args[0], args[1]);
+            break;
+
+        case 'decompress':
+            if (args.length < 2) return console.log('Invalid input');
+            await decompressFile(args[0], args[1]);
+            break;
 
         default:
             console.log('Invalid input');
@@ -128,3 +180,55 @@ async function listDirectoryContents() {
         throw new Error('Operation failed');
     }
 }
+
+async function readFile(filePath) {
+    const fullPath = path.resolve(currentDir, filePath);
+    const stream = createReadStream(fullPath);
+    stream.on('error', () => console.log('Operation failed'));
+    stream.pipe(process.stdout);
+    stream.on('end', () => {
+        console.log();
+        printCurrentDirectory();
+        rl.prompt();
+    });
+}
+
+async function addFile(name) {
+    // добавить проверку от уже созданного файла
+    const filePath = path.join(currentDir, name);
+    await fs.writeFile(filePath, '');
+}
+
+async function makeDirectory(name) {
+    // добавить проверку от уже созданной папки
+    const dirPath = path.join(currentDir, name);
+    await fs.mkdir(dirPath);
+}
+
+async function renameFile(oldPath, newName) {
+    const oldFullPath = path.resolve(currentDir, oldPath);
+    const newFullPath = path.join(path.dirname(oldFullPath), newName);
+    await fs.rename(oldFullPath, newFullPath);
+}
+
+async function copyFile(src, destDir) {
+    const srcPath = path.resolve(currentDir, src);
+    const destPath = path.join(path.resolve(currentDir, destDir), path.basename(src));
+
+    await pipeline(
+        createReadStream(srcPath),
+        createWriteStream(destPath)
+    );
+}
+
+async function moveFile(src, destDir) {
+    await copyFile(src, destDir);
+    const srcPath = path.resolve(currentDir, src);
+    await fs.unlink(srcPath);
+}
+
+async function removeFile(filePath) {
+    const fullPath = path.resolve(currentDir, filePath);
+    await fs.unlink(fullPath);
+}
+
