@@ -1,10 +1,12 @@
 import os from 'os';
 import path from 'path';
 import readline from 'readline';
-import process from 'node:process';
+import process from 'process';
 import fs from 'fs/promises';
 import { pipeline } from 'stream/promises';
 import { createReadStream, createWriteStream } from 'fs';
+import { createHash } from 'crypto';
+import { createBrotliCompress, createBrotliDecompress } from 'zlib';
 
 const args = process.argv.slice(2);
 const usernameArg = args.find(arg => arg.startsWith('--username='));
@@ -232,3 +234,63 @@ async function removeFile(filePath) {
     await fs.unlink(fullPath);
 }
 
+async function handleOSCommand(flag) {
+    switch (flag) {
+        case '--EOL':
+            console.log(JSON.stringify(os.EOL));
+            break;
+        case '--cpus':
+            const cpus = os.cpus();
+            console.log(`Total CPUs: ${cpus.length}`);
+            cpus.forEach((cpu, index) => {
+                console.log(`CPU ${index + 1}: ${cpu.model}, ${cpu.speed / 1000} GHz`);
+            });
+            break;
+        case '--homedir':
+            console.log(os.homedir());
+            break;
+        case '--username':
+            console.log(os.userInfo().username);
+            break;
+        case '--architecture':
+            console.log(process.arch);
+            break;
+        default:
+            console.log('Invalid input');
+    }
+}
+
+async function hashFile(filePath) {
+    const fullPath = path.resolve(currentDir, filePath);
+    const hash = createHash('sha256');
+    const stream = createReadStream(fullPath);
+
+    stream.on('error', () => console.log('Operation failed'));
+
+    stream.on('data', chunk => hash.update(chunk));
+    stream.on('end', () => {
+        console.log(hash.digest('hex'));
+    });
+}
+
+async function compressFile(src, dest) {
+    const srcPath = path.resolve(currentDir, src);
+    const destPath = path.resolve(currentDir, dest);
+
+    await pipeline(
+        createReadStream(srcPath),
+        createBrotliCompress(),
+        createWriteStream(destPath)
+    );
+}
+
+async function decompressFile(src, dest) {
+    const srcPath = path.resolve(currentDir, src);
+    const destPath = path.resolve(currentDir, dest);
+
+    await pipeline(
+        createReadStream(srcPath),
+        createBrotliDecompress(),
+        createWriteStream(destPath)
+    );
+}
