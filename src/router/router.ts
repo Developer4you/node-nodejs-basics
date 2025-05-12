@@ -49,7 +49,7 @@ export const router = async (
                     }
 
                     if (!UUID_REGEX.test(userId)) {
-                        return sendResponse(res, 400, { error: 'Invalid UUID' });
+                        return sendResponse(res, 400, { error: 'Invalid UUID format' });
                     }
 
                     const user = DB.getUser(userId);
@@ -142,7 +142,7 @@ export const router = async (
                         return sendResponse(res, 400, { error: 'User ID is required' });
                     }
                     if (!UUID_REGEX.test(userId)) {
-                        return sendResponse(res, 400, { error: 'Invalid UUID' });
+                        return sendResponse(res, 400, { error: 'Invalid UUID format' });
                     }
                     try {
                         const isDeleted = DB.deleteUser(userId);
