@@ -1,5 +1,6 @@
 import { IncomingMessage, ServerResponse } from 'node:http';
 import { DB } from '../database/database';
+import { UserWithoutId } from '../types';
 
 const parseRequestBody = (req: IncomingMessage): Promise<any> => {
     return new Promise((resolve, reject) => {
@@ -88,34 +89,47 @@ export const router = async (
                         return sendResponse(res, 500, { error: 'Internal server error' });
                     }
 
-                    case 'PUT':
+                case 'PUT':
                     if (!userId) {
                         return sendResponse(res, 400, { error: 'User ID is required' });
                     }
                     if (!UUID_REGEX.test(userId)) {
-                        return sendResponse(res, 400, { error: 'Invalid UUID' });
+                        return sendResponse(res, 400, { error: 'Invalid UUID format' });
                     }
+
                     try {
                         const body = await parseRequestBody(req);
+                        const existingUser = DB.getUser(userId);
 
-                        // Валидация полей, если они присутствуют
-                        if (body.username !== undefined && typeof body.username !== 'string') {
-                            return sendResponse(res, 400, { error: 'Username must be a string' });
-                        }
-                        if (body.age !== undefined && typeof body.age !== 'number') {
-                            return sendResponse(res, 400, { error: 'Age must be a number' });
-                        }
-                        if (body.hobbies !== undefined) {
-                            if (!Array.isArray(body.hobbies) || body.hobbies.some(h => typeof h !== 'string')) {
-                                return sendResponse(res, 400, { error: 'Hobbies must be an array of strings' });
-                            }
-                        }
-
-                        const updatedUser = DB.updateUser(userId, body);
-                        if (!updatedUser) {
+                        if (!existingUser) {
                             return sendResponse(res, 404, { error: 'User not found' });
                         }
-                        return sendResponse(res, 200, updatedUser);
+
+                        const updateData: Partial<UserWithoutId> = {};
+
+                        if (body.username !== undefined) {
+                            if (typeof body.username !== 'string') {
+                                return sendResponse(res, 400, { error: 'Username must be a string' });
+                            }
+                            updateData.username = body.username;
+                        }
+
+                        if (body.age !== undefined) {
+                            if (typeof body.age !== 'number') {
+                                return sendResponse(res, 400, { error: 'Age must be a number' });
+                            }
+                            updateData.age = body.age;
+                        }
+
+                        if (body.hobbies !== undefined) {
+                            if (!Array.isArray(body.hobbies) || body.hobbies.some((h: string) => typeof h !== 'string')) {
+                                return sendResponse(res, 400, { error: 'Hobbies must be an array of strings' });
+                            }
+                            updateData.hobbies = body.hobbies;
+                        }
+
+                        const updatedUser = DB.updateUser(userId, updateData);
+                        return sendResponse(res, 200, updatedUser!); // Non-null assertion
                     } catch (error) {
                         if (error instanceof Error && error.message === 'Invalid JSON') {
                             return sendResponse(res, 400, { error: error.message });
