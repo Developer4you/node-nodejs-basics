@@ -75,7 +75,7 @@ export const router = async (
                             return sendResponse(res, 400, { error: 'Hobbies must be an array' });
                         }
 
-                        const newUser = await DB.createUser({
+                        const newUser = DB.createUser({
                             username: body.username,
                             age: body.age,
                             hobbies: body.hobbies || [],
@@ -88,7 +88,57 @@ export const router = async (
                         return sendResponse(res, 500, { error: 'Internal server error' });
                     }
 
-                // реализовать PUT и DELETE
+                    case 'PUT':
+                    if (!userId) {
+                        return sendResponse(res, 400, { error: 'User ID is required' });
+                    }
+                    if (!UUID_REGEX.test(userId)) {
+                        return sendResponse(res, 400, { error: 'Invalid UUID' });
+                    }
+                    try {
+                        const body = await parseRequestBody(req);
+
+                        // Валидация полей, если они присутствуют
+                        if (body.username !== undefined && typeof body.username !== 'string') {
+                            return sendResponse(res, 400, { error: 'Username must be a string' });
+                        }
+                        if (body.age !== undefined && typeof body.age !== 'number') {
+                            return sendResponse(res, 400, { error: 'Age must be a number' });
+                        }
+                        if (body.hobbies !== undefined) {
+                            if (!Array.isArray(body.hobbies) || body.hobbies.some(h => typeof h !== 'string')) {
+                                return sendResponse(res, 400, { error: 'Hobbies must be an array of strings' });
+                            }
+                        }
+
+                        const updatedUser = DB.updateUser(userId, body);
+                        if (!updatedUser) {
+                            return sendResponse(res, 404, { error: 'User not found' });
+                        }
+                        return sendResponse(res, 200, updatedUser);
+                    } catch (error) {
+                        if (error instanceof Error && error.message === 'Invalid JSON') {
+                            return sendResponse(res, 400, { error: error.message });
+                        }
+                        return sendResponse(res, 500, { error: 'Internal server error' });
+                    }
+
+                case 'DELETE':
+                    if (!userId) {
+                        return sendResponse(res, 400, { error: 'User ID is required' });
+                    }
+                    if (!UUID_REGEX.test(userId)) {
+                        return sendResponse(res, 400, { error: 'Invalid UUID' });
+                    }
+                    try {
+                        const isDeleted = DB.deleteUser(userId);
+                        if (!isDeleted) {
+                            return sendResponse(res, 404, { error: 'User not found' });
+                        }
+                        return sendResponse(res, 204);
+                    } catch (error) {
+                        return sendResponse(res, 500, { error: 'Internal server error' });
+                    }
 
                 default:
                     return sendResponse(res, 405, { error: 'Method not allowed' });

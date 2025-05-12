@@ -1,6 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { promises as fs } from 'node:fs';
-import path from 'node:path';
+import cluster from 'cluster';
 
 export type User = {
     id: string;
@@ -9,33 +8,42 @@ export type User = {
     hobbies: string[];
 };
 
-const DB_PATH = path.join(process.cwd(), 'db.json');
-
 class InMemoryDB {
     private users: User[] = [];
+    private channel: string;
 
     constructor() {
-        this.init();
+        this.channel = 'db-events';
+        this.setupIPC();
     }
 
-    private async init() {
-        try {
-            const data = await fs.readFile(DB_PATH, 'utf-8');
-            this.users = JSON.parse(data);
-        } catch (error) {
-            if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-                await this.saveToFile();
-            } else {
-                console.error('Error initializing database:', error);
-            }
+    private setupIPC() {
+        if (cluster.isWorker) {
+            process.on('message', (msg: { event: string; data: any }) => {
+                if (msg.event === this.channel) {
+                    this.applyChange(msg.data);
+                }
+            });
         }
     }
 
-    private async saveToFile() {
-        try {
-            await fs.writeFile(DB_PATH, JSON.stringify(this.users, null, 2));
-        } catch (error) {
-            console.error('Error saving database:', error);
+    private broadcastChange(event: string, data: any) {
+        if (cluster.isWorker) {
+            process.send!({ event: this.channel, data: { event, data } });
+        }
+    }
+
+    private applyChange({ event, data }: { event: string; data: any }) {
+        switch (event) {
+            case 'create':
+                this.users.push(data);
+                break;
+            case 'update':
+                this.users = this.users.map(u => u.id === data.id ? data : u);
+                break;
+            case 'delete':
+                this.users = this.users.filter(u => u.id !== data);
+                break;
         }
     }
 
@@ -47,32 +55,29 @@ class InMemoryDB {
         return this.users.find(user => user.id === id);
     }
 
-    async createUser(userData: Omit<User, 'id'>) {
+    createUser(userData: Omit<User, 'id'>) {
         const newUser = { id: uuidv4(), ...userData };
         this.users.push(newUser);
-        await this.saveToFile();
+        this.broadcastChange('create', newUser);
         return newUser;
     }
 
-    async updateUser(id: string, userData: Partial<Omit<User, 'id'>>) {
+    updateUser(id: string, userData: Partial<Omit<User, 'id'>>) {
         const userIndex = this.users.findIndex(user => user.id === id);
         if (userIndex === -1) return null;
 
-        this.users[userIndex] = {
-            ...this.users[userIndex],
-            ...userData
-        };
-
-        await this.saveToFile();
-        return this.users[userIndex];
+        const updatedUser = { ...this.users[userIndex], ...userData };
+        this.users[userIndex] = updatedUser;
+        this.broadcastChange('update', updatedUser);
+        return updatedUser;
     }
 
-    async deleteUser(id: string) {
+    deleteUser(id: string) {
         const userIndex = this.users.findIndex(user => user.id === id);
         if (userIndex === -1) return false;
 
         this.users.splice(userIndex, 1);
-        await this.saveToFile();
+        this.broadcastChange('delete', id);
         return true;
     }
 }
