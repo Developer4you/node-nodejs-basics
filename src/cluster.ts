@@ -15,5 +15,5 @@ if (cluster.isPrimary) {
         workerIndex = (workerIndex + 1) % workers.length;
     });
 } else {
-    import('./server.js');
+    import('./index.ts');
 }

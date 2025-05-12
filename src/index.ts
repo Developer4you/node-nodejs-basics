@@ -1,11 +1,11 @@
 import http from 'http';
 import dotenv from 'dotenv';
-import { router } from './routes.js';
+import { router } from './router/router';
 
 dotenv.config();
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 4000;
-const server = http.createServer(async (req, res) => {
+const index = http.createServer(async (req, res) => {
     try {
         await router(req, res);
     } catch (error) {
@@ -14,6 +14,6 @@ const server = http.createServer(async (req, res) => {
     }
 });
 
-server.listen(PORT, () => {
+index.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });

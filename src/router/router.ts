@@ -1,6 +1,5 @@
 import { IncomingMessage, ServerResponse } from 'node:http';
-import { v4 as uuidv4 } from 'uuid';
-import { DB, User } from './database.js';
+import { DB } from '../database/database';
 
 const parseRequestBody = (req: IncomingMessage): Promise<any> => {
     return new Promise((resolve, reject) => {
@@ -66,12 +65,21 @@ export const router = async (
                             return sendResponse(res, 400, { error: 'Missing required fields' });
                         }
 
-                        const newUser = DB.createUser({
+                        // Валидация типов данных
+                        if (typeof body.age !== 'number') {
+                            return sendResponse(res, 400, { error: 'Age must be a number' });
+                        }
+
+                        // Проверка формата hobbies
+                        if (!Array.isArray(body.hobbies)) {
+                            return sendResponse(res, 400, { error: 'Hobbies must be an array' });
+                        }
+
+                        const newUser = await DB.createUser({
                             username: body.username,
                             age: body.age,
                             hobbies: body.hobbies || [],
                         });
-
                         return sendResponse(res, 201, newUser);
                     } catch (error) {
                         if (error instanceof Error) {
